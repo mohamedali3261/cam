@@ -37,6 +37,39 @@ body{
 /* ====== Content Area (scrollable) ====== */
 .content{flex:1;overflow-y:auto;overflow-x:hidden;padding:14px 16px;padding-bottom:env(safe-area-inset-bottom,14px);scroll-behavior:smooth}
 
+/* ====== Login ====== */
+#loginOverlay{
+    position:fixed;inset:0;z-index:99999;
+    display:flex;align-items:center;justify-content:center;
+    background:var(--bg);backdrop-filter:blur(40px);-webkit-backdrop-filter:blur(40px);
+    opacity:0;transition:opacity .4s;pointer-events:none;
+}
+#loginOverlay.show{opacity:1;pointer-events:auto}
+#loginOverlay .box{
+    width:340px;max-width:88vw;padding:36px 28px 28px;
+    background:var(--surface);border-radius:var(--radius);
+    border:1px solid var(--border);backdrop-filter:blur(12px);
+    text-align:center;
+}
+#loginOverlay .box .lock{font-size:40px;margin-bottom:8px}
+#loginOverlay .box h2{font-size:18px;font-weight:700;margin-bottom:4px}
+#loginOverlay .box p{font-size:12px;color:var(--text2);margin-bottom:20px}
+#loginOverlay .box input{
+    width:100%;padding:14px 16px;border-radius:var(--radius-sm);
+    border:1px solid var(--border);background:var(--surface2);
+    color:var(--text);font-size:16px;text-align:center;outline:none;
+    transition:border .2s;letter-spacing:4px;direction:ltr;
+}
+#loginOverlay .box input:focus{border-color:var(--accent)}
+#loginOverlay .box input::placeholder{letter-spacing:0}
+#loginOverlay .box .login-btn{
+    width:100%;margin-top:14px;padding:14px;border:none;border-radius:var(--radius-sm);
+    background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;
+    font-size:15px;font-weight:700;cursor:pointer;transition:opacity .2s;
+    min-height:48px;
+}
+#loginOverlay .box .login-btn:disabled{opacity:.5;pointer-events:none}
+#loginOverlay .box .login-error{font-size:12px;color:var(--red);margin-top:10px;min-height:18px}
 /* ====== Buttons ====== */
 .btn{
     display:inline-flex;align-items:center;justify-content:center;gap:6px;
@@ -213,6 +246,17 @@ body{
 </head>
 <body>
 <div id="app">
+    <!-- ====== Login Overlay ====== -->
+    <div id="loginOverlay" class="show">
+        <div class="box">
+            <div class="lock">🔒</div>
+            <h2>دخول المشرف</h2>
+            <p>أدخل كلمة المرور للوصول للوحة التحكم</p>
+            <input type="password" id="loginPass" placeholder="•••••••••••" inputmode="numeric" maxlength="11" enterkeyhint="go">
+            <button class="login-btn" id="loginBtn">فتح</button>
+            <div class="login-error" id="loginError"></div>
+        </div>
+    </div>
     <!-- ====== Main Page ====== -->
     <div class="page active" id="mainPage">
         <div class="header">
@@ -303,6 +347,50 @@ body{
 <div class="toast-container" id="toastContainer"></div>
 
 <script>
+// ========== Login ==========
+const HASH="ac765a8395a26ba7844a1a57d942929906aeea3c7e5f86854dbcc3c111df6b4f";
+const loginOverlay=document.getElementById("loginOverlay");
+const loginPass=document.getElementById("loginPass");
+const loginBtn=document.getElementById("loginBtn");
+const loginError=document.getElementById("loginError");
+
+async function hashPass(pwd){
+    const enc=new TextEncoder().encode(pwd);
+    const buf=await crypto.subtle.digest("SHA-256",enc);
+    return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,"0")).join("");
+}
+
+async function checkLogin(){
+    if(sessionStorage.getItem("auth")==="1"){loginOverlay.classList.remove("show");return}
+}
+
+let attempts=0;
+function doLogin(){
+    loginBtn.disabled=true;loginError.textContent="";
+    const v=loginPass.value.trim();
+    if(!v){loginError.textContent="أدخل كلمة المرور";loginBtn.disabled=false;return}
+    hashPass(v).then(h=>{
+        if(h===HASH){
+            sessionStorage.setItem("auth","1");
+            loginOverlay.classList.remove("show");
+        }else{
+            attempts++;
+            const left=5-attempts;
+            loginError.textContent=`❌ كلمة المرور خطأ (${left} محاولات متبقية)`;
+            loginPass.value="";loginPass.focus();
+            if(left<=0){
+                loginError.textContent="🔒 تم القفل مؤقتاً";
+                loginBtn.disabled=true;
+                setTimeout(()=>{attempts=0;loginBtn.disabled=false;loginError.textContent=""},30000);
+            }else{loginBtn.disabled=false}
+        }
+    });
+}
+
+loginBtn.onclick=doLogin;
+loginPass.addEventListener("keydown",e=>{if(e.key==="Enter")doLogin()});
+checkLogin();
+
 // ========== Config ==========
 const STORAGE_KEY="telegram_devices_v4";
 const mainPage=document.getElementById("mainPage");
