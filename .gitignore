@@ -1,0 +1,10 @@
+node_modules/
+noteflow/
+dist/
+assets/
+package-lock.json
+package.json
+capacitor.config.json
+copy-assets.js
+/telegram.js
+.DS_Store

