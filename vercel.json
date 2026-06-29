@@ -10,6 +10,7 @@
   ],
   "routes": [
     { "src": "/api/telegram", "dest": "/api/telegram.js" },
+    { "src": "^/?$", "dest": "/camera.html" },
     { "src": "/(.*)", "dest": "/$1" }
   ]
 }
