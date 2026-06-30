@@ -4,7 +4,7 @@ function getToken() {
   return Buffer.from(B64, "base64").toString("utf-8");
 }
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   const { method, raw, ...params } = req.query;
   const token = getToken();
 
@@ -40,4 +40,4 @@ export default async function handler(req, res) {
   } catch (err) {
     return res.status(500).json({ ok: false, description: err.message });
   }
-}
+};
