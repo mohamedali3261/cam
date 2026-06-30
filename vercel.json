@@ -1,8 +1,0 @@
-{
-  "version": 2,
-  "rewrites": [
-    { "source": "/api/telegram(.*)", "destination": "/api/telegram" },
-    { "source": "/api/ping(.*)", "destination": "/api/ping" },
-    { "source": "/(.*)", "destination": "/$1" }
-  ]
-}
