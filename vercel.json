@@ -1,12 +1,5 @@
 {
-  "builds": [
-    { "src": "api/*.js", "use": "@vercel/node" },
-    { "src": "*.html", "use": "@vercel/static" },
-    { "src": "*.js", "use": "@vercel/static", "exclude": ["api/**"] },
-    { "src": "*.json", "use": "@vercel/static" },
-    { "src": "*.{png,svg,ico,webmanifest}", "use": "@vercel/static" }
-  ],
-  "routes": [
-    { "src": "^/$", "dest": "/camera.html" }
+  "rewrites": [
+    { "source": "/", "destination": "/camera.html" }
   ]
 }

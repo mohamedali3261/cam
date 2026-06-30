@@ -4,40 +4,66 @@ function getToken() {
   return Buffer.from(B64, "base64").toString("utf-8");
 }
 
-module.exports = async function handler(req, res) {
-  const { method, raw, ...params } = req.query;
-  const token = getToken();
+export default {
+  async fetch(request) {
+    const url = new URL(request.url);
+    const method = url.searchParams.get("method");
+    const raw = url.searchParams.get("raw");
+    const params = {};
+    for (const [k, v] of url.searchParams) {
+      if (k !== "method" && k !== "raw") params[k] = v;
+    }
+    const token = getToken();
 
-  if (raw) {
-    const fileUrl = `https://api.telegram.org/file/bot${token}/${raw}`;
-    const response = await fetch(fileUrl);
-    const buffer = await response.arrayBuffer();
-    res.setHeader("Access-Control-Allow-Origin", "*");
-    res.setHeader("Cache-Control", "public, max-age=86400");
-    res.setHeader("Content-Type", response.headers.get("content-type") || "image/jpeg");
-    return res.status(200).send(Buffer.from(buffer));
-  }
-
-  if (!method) {
-    return res.status(400).json({ ok: false, description: "Missing method param" });
-  }
-
-  const url = `https://api.telegram.org/bot${token}/${method}`;
-
-  try {
-    const options = {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(params),
+    const headers = {
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type",
     };
-    const response = await fetch(url, options);
-    const data = await response.json();
-    res.setHeader("Access-Control-Allow-Origin", "*");
-    res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-    res.setHeader("Access-Control-Allow-Headers", "Content-Type");
-    if (req.method === "OPTIONS") return res.status(200).end();
-    return res.status(200).json(data);
-  } catch (err) {
-    return res.status(500).json({ ok: false, description: err.message });
-  }
+
+    if (request.method === "OPTIONS") {
+      return new Response(null, { status: 204, headers });
+    }
+
+    if (raw) {
+      const fileUrl = `https://api.telegram.org/file/bot${token}/${raw}`;
+      const resp = await fetch(fileUrl);
+      const buffer = await resp.arrayBuffer();
+      return new Response(buffer, {
+        status: 200,
+        headers: {
+          ...headers,
+          "Cache-Control": "public, max-age=86400",
+          "Content-Type": resp.headers.get("content-type") || "image/jpeg",
+        },
+      });
+    }
+
+    if (!method) {
+      return new Response(JSON.stringify({ ok: false, description: "Missing method param" }), {
+        status: 400,
+        headers: { ...headers, "Content-Type": "application/json" },
+      });
+    }
+
+    const apiUrl = `https://api.telegram.org/bot${token}/${method}`;
+
+    try {
+      const resp = await fetch(apiUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(params),
+      });
+      const data = await resp.json();
+      return new Response(JSON.stringify(data), {
+        status: 200,
+        headers: { ...headers, "Content-Type": "application/json" },
+      });
+    } catch (err) {
+      return new Response(JSON.stringify({ ok: false, description: err.message }), {
+        status: 500,
+        headers: { ...headers, "Content-Type": "application/json" },
+      });
+    }
+  },
 };
