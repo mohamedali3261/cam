@@ -3,6 +3,8 @@ const root=__dirname,port=9090;
 const b64="ODY1Njg1MTg3MjpBQUg0TGhaYUpOZ1pRT29hdFBOcTl3NC1RU0QzS3loRTJDWQ==";
 const token=process.env.TELEGRAM_BOT_TOKEN||Buffer.from(b64,"base64").toString("utf-8");
 const types={".html":"text/html;charset=utf-8",".css":"text/css",".js":"text/javascript",".png":"image/png",".jpg":"image/jpeg",".svg":"image/svg+xml",".json":"application/json"};
+// In-memory device store for /api/ping
+const pingDevices=new Map();
 
 function apiTelegram(method,params,res,cb){
     const body=JSON.stringify(params);
@@ -45,7 +47,6 @@ http.createServer((req,res)=>{
     if(pathname==="/api/telegram"){
         const {method,raw,...params}=parsed.query;
         if(raw){
-            // Serve file from Telegram
             const filePath=`/file/bot${token}/${raw}`;
             const opts={hostname:"api.telegram.org",path:filePath,method:"GET"};
             const proxy=https.request(opts,r=>{
@@ -60,6 +61,31 @@ http.createServer((req,res)=>{
             res.writeHead(400,{"Content-Type":"application/json"});
             res.end(JSON.stringify({ok:false,description:"Missing method"}));
         }
+        return;
+    }
+
+    // HTTP ping API (device registration)
+    if(pathname==="/api/ping"){
+        const {action,chatId,name,deviceId,mode}=parsed.query;
+        res.setHeader("Access-Control-Allow-Origin","*");
+        res.setHeader("Content-Type","application/json");
+        if(action==="register"&&chatId){
+            pingDevices.set(chatId,{chatId,name:name||"جهاز",deviceId:deviceId||"",lastSeen:Date.now(),addedAt:Date.now(),mode:mode||"http"});
+            // Also notify via Telegram
+            const msg=`🆕 جهاز جديد مسجل (HTTP)\n🆔 المعرف: ${deviceId||"—"}\n📱 الجهاز: ${name||"جهاز"}\n💬 Chat ID: ${chatId}`;
+            apiTelegram("sendMessage",{chat_id:"1141104495",text:msg},res);
+            return;
+        }else if(action==="list"){
+            const list=Array.from(pingDevices.values());
+            res.end(JSON.stringify({ok:true,devices:list}));
+            return;
+        }else if(action==="ping"&&chatId){
+            const d=pingDevices.get(chatId);
+            if(d){d.lastSeen=Date.now();res.end(JSON.stringify({ok:true}))}
+            else res.writeHead(404);res.end(JSON.stringify({ok:false}));
+            return;
+        }
+        res.end(JSON.stringify({ok:false,message:"missing params"}));
         return;
     }
 
