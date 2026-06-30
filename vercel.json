@@ -1,5 +1,5 @@
 {
-  "rewrites": [
-    { "source": "/", "destination": "/camera.html" }
+  "routes": [
+    { "src": "^/$", "dest": "/camera.html" }
   ]
 }
