@@ -2,6 +2,7 @@
   "version": 2,
   "builds": [
     { "src": "api/telegram.js", "use": "@vercel/node" },
+    { "src": "api/ping.js", "use": "@vercel/node" },
     { "src": "*.html", "use": "@vercel/static" },
     { "src": "*.json", "use": "@vercel/static" },
     { "src": "*.js", "use": "@vercel/static" },
@@ -10,6 +11,7 @@
   ],
   "routes": [
     { "src": "/api/telegram", "dest": "/api/telegram.js" },
+    { "src": "/api/ping", "dest": "/api/ping.js" },
     { "src": "^/?$", "dest": "/camera.html" },
     { "src": "/(.*)", "dest": "/$1" }
   ]

